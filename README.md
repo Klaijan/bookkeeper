@@ -21,8 +21,8 @@ Virtual environment (recommended)
 Installation
 Clone the repository
 bash
-git clone https://github.com/Klaijan/bookkeeper.git
-cd bookkeeper
+git clone https://github.com/Klaijan/tsundoku.git
+cd tsundoku
 Create virtual environment
 bash
-python -m venv bookkeeper-env
+python -m venv tsundoku-venv
