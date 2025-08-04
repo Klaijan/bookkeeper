@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Book Cover - BookKeeper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #28a745;
+            width: auto;
+            display: inline-block;
+            margin: 5px;
+        }
+        
+        .language-select {
+            margin-bottom: 20px;
+        }
+        
+        .language-select label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .language-select select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .processing {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-size: 1.1rem;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .camera-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #camera-preview {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Library</a>
+        <h1>📸 Add Book by Photo</h1>
+        
+        <!-- Error container for JavaScript -->
+        <div id="error-container"></div>
+        
+        <!-- Camera Section -->
+        <div class="camera-section">
+            <button type="button" class="btn btn-secondary" onclick="startCamera()">📷 Use Camera</button>
+            <video id="camera-preview" style="display: none;" autoplay playsinline></video>
+            <canvas id="capture-canvas" style="display: none;"></canvas>
+            <br>
+            <button type="button" class="btn btn-secondary" id="capture-btn" style="display: none;" onclick="capturePhoto()">📸 Capture Photo</button>
+        </div>
+        
+        <form id="upload-form" method="POST" enctype="multipart/form-data" action="/ocr/upload-photo">
+            <!-- Language Selection -->
+            <div class="language-select">
+                <label for="target_language">Language (optional - helps OCR accuracy):</label>
+                <select name="target_language" id="target_language">
+                    <option value="">Auto-detect</option>
+                    <option value="en">English</option>
+                    <!-- <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh">Chinese</option> -->
+                </select>
+            </div>
+            
+            <!-- Upload Area -->
+            <div class="upload-area" onclick="document.getElementById('photo').click()">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Click to select or drag & drop book cover image</div>
+                <div style="margin-top: 10px; color: #999; font-size: 0.9rem;">
+                    Supports: PNG, JPG, JPEG, GIF, BMP, TIFF, WEBP
+                </div>
+            </div>
+            
+            <input type="file" id="photo" name="photo" class="file-input" accept="image/*" onchange="previewImage(this)">
+            
+            <!-- Preview Container -->
+            <div class="preview-container" id="preview-container"></div>
+            
+            <!-- Processing Indicator -->
+            <div class="processing" id="processing">
+                <div class="spinner"></div>
+                Processing image with OCR...
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="btn" id="submit-btn">Extract Book Information</button>
+        </form>
+    </div>
+
+    <script>
+        let cameraStream = null;
+        
+        // Drag and drop functionality
+        const uploadArea = document.querySelector(".upload-area");
+        
+        uploadArea.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadArea.classList.add("dragover");
+        });
+        
+        uploadArea.addEventListener("dragleave", () => {
+            uploadArea.classList.remove("dragover");
+        });
+        
+        uploadArea.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove("dragover");
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById("photo").files = files;
+                previewImage(document.getElementById("photo"));
+            }
+        });
+        
+        // Camera functionality
+        async function startCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "environment",  // Use back camera on mobile
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                
+                const video = document.getElementById("camera-preview");
+                const captureBtn = document.getElementById("capture-btn");
+                
+                video.srcObject = cameraStream;
+                video.style.display = "block";
+                captureBtn.style.display = "inline-block";
+                
+            } catch (err) {
+                showError("Camera access denied or not available. Please use file upload instead.");
+                console.error("Camera error:", err);
+            }
+        }
+        
+        function capturePhoto() {
+            const video = document.getElementById("camera-preview");
+            const canvas = document.getElementById("capture-canvas");
+            const ctx = canvas.getContext("2d");
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to blob and create file
+            canvas.toBlob((blob) => {
+                const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+                const fileInput = document.getElementById("photo");
+                
+                // Create a new FileList with our captured image
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+                
+                previewImage(fileInput);
+                
+                // Stop camera
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    video.style.display = "none";
+                    document.getElementById("capture-btn").style.display = "none";
+                }
+            }, "image/jpeg", 0.8);
+        }
+        
+        // Image preview functionality
+        function previewImage(input) {
+            const previewContainer = document.getElementById("preview-container");
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview" class="preview-image">
+                        <p style="margin-top: 10px; color: #666;">Ready to process!</p>
+                    `;
+                };
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // Error display function
+        function showError(message) {
+            const errorContainer = document.getElementById("error-container");
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        // Form submission with loading state
+        document.getElementById("upload-form").addEventListener("submit", function(e) {
+            const fileInput = document.getElementById("photo");
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                showError("Please select an image first");
+                return;
+            }
+            
+            // Show processing indicator
+            document.getElementById("processing").style.display = "block";
+            document.getElementById("submit-btn").disabled = true;
+            document.getElementById("submit-btn").textContent = "Processing...";
+        });
+    </script>
+</body>
+</html>
