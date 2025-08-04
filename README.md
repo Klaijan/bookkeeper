@@ -2,7 +2,7 @@
 
 Still a Work in Progress!
 
-BookKeeper helps you organize your personal book collection using modern technology. Add books by taking photos of covers (OCR), scanning barcodes (ISBN lookup), or manual entry. Manage multiple shelves and sync with Google Sheets.
+Tsundoku helps you organize your personal book collection using modern technology. Add books by taking photos of covers (OCR), scanning barcodes (ISBN lookup), or manual entry. Manage multiple shelves and sync with Google Sheets.
 
 Show Image
 
